@@ -1,28 +1,43 @@
-enum FileSize {
-    Bytes(u64),
-    Kilobytes(f64),
-    Megabytes(f64),
-    Gigabytes(f64),
+
+use std::env;
+use std::fmt;
+struct Sizes {
+    bytes: u64,
+    kilobytes: f64,
+    megabytes: f64,
+    gigabytes: f64,
 }
 
-fn format_size(size: u64) -> String {
-    let filesize = match size {
-        0..=999 => FileSize::Bytes(size),
-        1000..=999_999 => FileSize::Kilobytes(size as f64 / 1000.0),
-        1_000_000..=999_999_999 => FileSize::Megabytes(size as f64 / 1_000_000.0),
-        _ => FileSize::Gigabytes(size as f64 / 1_000_000_000.0),
-    };
-
-    match filesize {
-        FileSize::Bytes(bytes) => format!("{} bytes", bytes),
-        FileSize::Kilobytes(kb) => format!("{:.2} KB", kb),
-        FileSize::Megabytes(mb) => format!("{:.2} MB", mb),
-        FileSize::Gigabytes(gb) => format!("{:.2} GB", gb),
+impl fmt::Debug for Sizes {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Sizes {{ bytes: \"{} bytes\", kilobytes: \"{} kilobytes\", megabytes: \"{} megabytes\", gigabytes: \"{} gigabytes\" }}",
+               self.bytes, self.kilobytes, self.megabytes, self.gigabytes)
     }
 }
 
+fn parse_size(size_str: &str) -> Sizes {
+    let parts: Vec<&str> = size_str.split_whitespace().collect();
+    let size = parts[0].parse::<u64>().unwrap();
+    let unit = parts[1];
+
+    let bytes = match unit {
+        "kb" | "kilobytes" => size * 1000,
+        "mb" | "megabytes" => size * 1_000_000,
+        "gb" | "gigabytes" => size * 1_000_000_000,
+        _ => size, // default is bytes
+    };
+
+    Sizes {
+        bytes,
+        kilobytes: bytes as f64 / 1000.0,
+        megabytes: bytes as f64 / 1_000_000.0,
+        gigabytes: bytes as f64 / 1_000_000_000.0,
+    }
+}
 
 fn main() {
-    let result = format_size(6888837399);
-    println!("{}", result)
+    let args: Vec<String> = env::args().collect();
+    let size_str = &args[1];
+    let sizes = parse_size(size_str);
+    println!("{:?}", sizes);
 }
